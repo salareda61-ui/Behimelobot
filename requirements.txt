@@ -4,3 +4,4 @@ telebot==0.0.5
 urllib3==1.26.18
 gunicorn==21.2.0
 flask==3.0.0
+werkzeug==3.0.1
