@@ -5,11 +5,11 @@
 behimelobot - یک ربات تلگرام برای جستجو و پخش آهنگ‌های فارسی از Radio Javan
 ساخته شده برای دختری زیبا راپونزل ایرانی بهنوش
 استفاده از API رسمی ineo-team.ir
-ویژه Render.com با پشتیبانی Mini App
+ویژه Render.com (نسخه تعمیر شده)
 """
 
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import requests
 import time
 import random
@@ -171,13 +171,12 @@ def create_inline_keyboard(item_id: str, callback_prefix: str, item_data: Dict =
     return keyboard
 
 def create_main_keyboard():
-    """ساخت کیبورد اصلی با دکمه Mini App"""
+    """ساخت کیبورد اصلی"""
     keyboard = InlineKeyboardMarkup()
     
-    # دکمه Mini App
+    # دکمه Mini App (به عنوان لینک معمولی)
     if WEBHOOK_URL:
-        webapp = WebAppInfo(url=f"{WEBHOOK_URL}/webapp")
-        keyboard.add(InlineKeyboardButton("🎵 باز کردن Mini App", web_app=webapp))
+        keyboard.add(InlineKeyboardButton("🎵 باز کردن Mini App", url=f"{WEBHOOK_URL}/webapp"))
     
     # دکمه‌های سریع
     keyboard.add(
@@ -402,14 +401,19 @@ def webapp():
         </div>
 
         <script>
-            // Initialize Telegram WebApp
-            let tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
-            
-            // Set theme colors
-            tg.setHeaderColor('#667eea');
-            tg.setBackgroundColor('#667eea');
+            // Initialize Telegram WebApp if available
+            let tg = null;
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    tg = window.Telegram.WebApp;
+                    tg.ready();
+                    tg.expand();
+                    tg.setHeaderColor('#667eea');
+                    tg.setBackgroundColor('#667eea');
+                }
+            } catch (e) {
+                console.log('Telegram WebApp not available:', e);
+            }
 
             function showLoading() {
                 document.getElementById('loading').style.display = 'block';
@@ -428,14 +432,24 @@ def webapp():
             function searchMusic() {
                 const query = document.getElementById('searchInput').value.trim();
                 if (!query) {
-                    tg.showAlert('لطفاً نام آهنگ را وارد کنید');
+                    if (tg) {
+                        tg.showAlert('لطفاً نام آهنگ را وارد کنید');
+                    } else {
+                        alert('لطفاً نام آهنگ را وارد کنید');
+                    }
                     return;
                 }
                 
                 showLoading();
                 
-                // Send data to bot
-                tg.sendData(`search:${query}`);
+                // Send data to bot if available
+                if (tg) {
+                    try {
+                        tg.sendData(`search:${query}`);
+                    } catch (e) {
+                        console.log('Error sending data:', e);
+                    }
+                }
                 
                 // Show in results
                 setTimeout(() => {
@@ -454,7 +468,13 @@ def webapp():
             function getNewMusic() {
                 showLoading();
                 
-                tg.sendData('new:latest');
+                if (tg) {
+                    try {
+                        tg.sendData('new:latest');
+                    } catch (e) {
+                        console.log('Error sending data:', e);
+                    }
+                }
                 
                 setTimeout(() => {
                     hideLoading();
@@ -482,7 +502,13 @@ def webapp():
             function popularMusic() {
                 showLoading();
                 
-                tg.sendData('popular:music');
+                if (tg) {
+                    try {
+                        tg.sendData('popular:music');
+                    } catch (e) {
+                        console.log('Error sending data:', e);
+                    }
+                }
                 
                 setTimeout(() => {
                     hideLoading();
@@ -498,16 +524,26 @@ def webapp():
             function clearResults() {
                 document.getElementById('results').innerHTML = '';
                 document.getElementById('searchInput').value = '';
-                tg.showAlert('✅ پاک شد!');
+                if (tg) {
+                    tg.showAlert('✅ پاک شد!');
+                } else {
+                    alert('✅ پاک شد!');
+                }
             }
 
-            // Handle theme changes
-            tg.onEvent('themeChanged', function() {
-                const isDark = tg.colorScheme === 'dark';
-                document.body.style.background = isDark ? 
-                    'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' : 
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            });
+            // Handle theme changes if available
+            if (tg) {
+                try {
+                    tg.onEvent('themeChanged', function() {
+                        const isDark = tg.colorScheme === 'dark';
+                        document.body.style.background = isDark ? 
+                            'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' : 
+                            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    });
+                } catch (e) {
+                    console.log('Theme change handler error:', e);
+                }
+            }
 
             // Show welcome message
             setTimeout(() => {
@@ -837,12 +873,23 @@ def handle_playlist(message):
         logger.error(f"Error in playlist handler: {e}")
         bot.reply_to(message, f"❌ خطای داخلی: {str(e)}")
 
-# ---------- هندلر WebApp Data ----------
+# ---------- هندلر WebApp Data (تعمیر شده) ----------
 
 @bot.message_handler(content_types=['web_app_data'])
 def handle_web_app_data(message):
     """پردازش داده‌های دریافتی از Mini App"""
     try:
+        # بررسی امن وجود web_app_data
+        if not hasattr(message, 'web_app_data') or not message.web_app_data:
+            logger.warning("No web_app_data found in message")
+            bot.reply_to(message, "❌ داده Mini App دریافت نشد")
+            return
+            
+        if not hasattr(message.web_app_data, 'data') or not message.web_app_data.data:
+            logger.warning("No data found in web_app_data")
+            bot.reply_to(message, "❌ داده خالی از Mini App")
+            return
+            
         data = message.web_app_data.data
         logger.info(f"WebApp data received: {data}")
         
@@ -867,6 +914,9 @@ def handle_web_app_data(message):
         else:
             bot.reply_to(message, f"💝 سلام بهنوش! از Mini App استفاده کردی\n\nداده دریافت شده: {data}")
             
+    except AttributeError as e:
+        logger.error(f"AttributeError in web app data handler: {e}")
+        bot.reply_to(message, "❌ خطا در پردازش درخواست Mini App - ساختار داده نامعتبر")
     except Exception as e:
         logger.error(f"Error handling web app data: {e}")
         bot.reply_to(message, "❌ خطا در پردازش درخواست Mini App")
