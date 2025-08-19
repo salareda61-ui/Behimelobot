@@ -5,11 +5,11 @@
 behimelobot - یک ربات تلگرام برای جستجو و پخش آهنگ‌های فارسی از Radio Javan
 ساخته شده برای دختری زیبا راپونزل ایرانی بهنوش
 استفاده از API رسمی ineo-team.ir
-ویژه Render.com
+ویژه Render.com با پشتیبانی Mini App
 """
 
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 import requests
 import time
 import random
@@ -170,6 +170,23 @@ def create_inline_keyboard(item_id: str, callback_prefix: str, item_data: Dict =
     
     return keyboard
 
+def create_main_keyboard():
+    """ساخت کیبورد اصلی با دکمه Mini App"""
+    keyboard = InlineKeyboardMarkup()
+    
+    # دکمه Mini App
+    if WEBHOOK_URL:
+        webapp = WebAppInfo(url=f"{WEBHOOK_URL}/webapp")
+        keyboard.add(InlineKeyboardButton("🎵 باز کردن Mini App", web_app=webapp))
+    
+    # دکمه‌های سریع
+    keyboard.add(
+        InlineKeyboardButton("🆕 جدیدترین", callback_data="quick_new"),
+        InlineKeyboardButton("📊 وضعیت", callback_data="quick_status")
+    )
+    
+    return keyboard
+
 def format_song_info(item: Dict) -> str:
     """فرمت کردن اطلاعات آهنگ برای نمایش"""
     title = item.get('title') or item.get('name') or "نامشخص"
@@ -208,7 +225,7 @@ def send_audio_or_link(chat_id: int, url: str, title: str = "آهنگ", artist: 
         logger.error(f"Error sending link: {e}")
         bot.send_message(chat_id, f"❌ خطا در ارسال لینک: {str(e)}")
 
-# ---------- Flask Routes (برای Webhook) ----------
+# ---------- Flask Routes (برای Webhook و Mini App) ----------
 @app.route('/')
 def index():
     return "🎵 Behimelobot is running on Render! 💝 Made with love for Behnosh"
@@ -227,6 +244,287 @@ def webhook():
 def health():
     return "OK - Behimelobot is healthy!", 200
 
+@app.route('/webapp')
+def webapp():
+    """صفحه Mini App"""
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Behimelobot - برای بهنوش</title>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <style>
+            body {
+                font-family: 'Tahoma', 'Arial', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                color: white;
+                direction: rtl;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 400px;
+                margin: 0 auto;
+                text-align: center;
+            }
+            .header {
+                margin-bottom: 30px;
+                animation: fadeIn 1s ease-in;
+            }
+            .header h1 {
+                font-size: 2em;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            }
+            .search-box {
+                width: 90%;
+                padding: 15px;
+                border: none;
+                border-radius: 25px;
+                font-size: 16px;
+                margin-bottom: 20px;
+                text-align: center;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                transition: all 0.3s ease;
+            }
+            .search-box:focus {
+                outline: none;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                transform: translateY(-2px);
+            }
+            .btn {
+                background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 25px;
+                font-size: 16px;
+                margin: 10px;
+                cursor: pointer;
+                width: 80%;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                transition: all 0.3s ease;
+                font-weight: bold;
+            }
+            .btn:hover {
+                background: linear-gradient(45deg, #ff5252, #ff7979);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            }
+            .btn:active {
+                transform: translateY(0);
+            }
+            .music-item {
+                background: rgba(255,255,255,0.1);
+                padding: 20px;
+                margin: 15px 0;
+                border-radius: 15px;
+                text-align: right;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.2);
+                animation: slideIn 0.5s ease-out;
+            }
+            .loading {
+                display: none;
+                margin: 20px 0;
+            }
+            .spinner {
+                border: 4px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top: 4px solid #fff;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateX(50px); }
+                to { opacity: 1; transform: translateX(0); }
+            }
+            .quick-buttons {
+                display: flex;
+                justify-content: space-around;
+                margin: 20px 0;
+            }
+            .quick-btn {
+                background: rgba(255,255,255,0.2);
+                border: none;
+                padding: 12px;
+                border-radius: 50%;
+                color: white;
+                font-size: 20px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                width: 60px;
+                height: 60px;
+            }
+            .quick-btn:hover {
+                background: rgba(255,255,255,0.3);
+                transform: scale(1.1);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎵 Behimelobot</h1>
+                <p>💝 ربات موسیقی برای دختری زیبا راپونزل ایرانی بهنوش</p>
+            </div>
+            
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 نام آهنگ یا آرتیست را بنویسید..." onkeypress="handleKeyPress(event)">
+            
+            <button class="btn" onclick="searchMusic()">🔍 جستجو آهنگ</button>
+            <button class="btn" onclick="getNewMusic()">🆕 آهنگ‌های جدید</button>
+            
+            <div class="quick-buttons">
+                <button class="quick-btn" onclick="randomSearch()" title="جستجوی تصادفی">🎲</button>
+                <button class="quick-btn" onclick="popularMusic()" title="محبوب‌ترین">🔥</button>
+                <button class="quick-btn" onclick="clearResults()" title="پاک کردن">🗑️</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>در حال پردازش...</p>
+            </div>
+            
+            <div id="results"></div>
+        </div>
+
+        <script>
+            // Initialize Telegram WebApp
+            let tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            
+            // Set theme colors
+            tg.setHeaderColor('#667eea');
+            tg.setBackgroundColor('#667eea');
+
+            function showLoading() {
+                document.getElementById('loading').style.display = 'block';
+            }
+
+            function hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            function handleKeyPress(event) {
+                if (event.key === 'Enter') {
+                    searchMusic();
+                }
+            }
+
+            function searchMusic() {
+                const query = document.getElementById('searchInput').value.trim();
+                if (!query) {
+                    tg.showAlert('لطفاً نام آهنگ را وارد کنید');
+                    return;
+                }
+                
+                showLoading();
+                
+                // Send data to bot
+                tg.sendData(`search:${query}`);
+                
+                // Show in results
+                setTimeout(() => {
+                    hideLoading();
+                    document.getElementById('results').innerHTML = `
+                        <div class="music-item">
+                            🔍 جستجو برای: <strong>${query}</strong>
+                            <br><br>✅ درخواست ارسال شد!
+                            <br>نتایج در چت ربات نمایش داده می‌شود.
+                            <br><br>🎵 برای دیدن نتایج به چت ربات بروید.
+                        </div>
+                    `;
+                }, 1000);
+            }
+
+            function getNewMusic() {
+                showLoading();
+                
+                tg.sendData('new:latest');
+                
+                setTimeout(() => {
+                    hideLoading();
+                    document.getElementById('results').innerHTML = `
+                        <div class="music-item">
+                            🆕 درخواست آهنگ‌های جدید ارسال شد!
+                            <br><br>✅ نتایج در چت ربات نمایش داده می‌شود.
+                            <br><br>🎵 برای دیدن آهنگ‌های جدید به چت ربات بروید.
+                        </div>
+                    `;
+                }, 1000);
+            }
+
+            function randomSearch() {
+                const randomQueries = [
+                    'محسن یگانه', 'پیشرو', 'پوزیکون', 'حمید هیراد', 'مرتضی پاشایی',
+                    'شادمهر عقیلی', 'رضا صادقی', 'علی یاسینی', 'مهراد جم', 'سینا حجازی'
+                ];
+                const randomQuery = randomQueries[Math.floor(Math.random() * randomQueries.length)];
+                
+                document.getElementById('searchInput').value = randomQuery;
+                searchMusic();
+            }
+
+            function popularMusic() {
+                showLoading();
+                
+                tg.sendData('popular:music');
+                
+                setTimeout(() => {
+                    hideLoading();
+                    document.getElementById('results').innerHTML = `
+                        <div class="music-item">
+                            🔥 درخواست محبوب‌ترین آهنگ‌ها ارسال شد!
+                            <br><br>✅ نتایج در چت ربات نمایش داده می‌شود.
+                        </div>
+                    `;
+                }, 1000);
+            }
+
+            function clearResults() {
+                document.getElementById('results').innerHTML = '';
+                document.getElementById('searchInput').value = '';
+                tg.showAlert('✅ پاک شد!');
+            }
+
+            // Handle theme changes
+            tg.onEvent('themeChanged', function() {
+                const isDark = tg.colorScheme === 'dark';
+                document.body.style.background = isDark ? 
+                    'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' : 
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            });
+
+            // Show welcome message
+            setTimeout(() => {
+                document.getElementById('results').innerHTML = `
+                    <div class="music-item">
+                        🎵 سلام بهنوش عزیز!
+                        <br><br>💝 از Mini App Behimelobot استفاده می‌کنی
+                        <br><br>🔍 می‌تونی اینجا جستجو کنی و نتایج رو در چت ربات ببینی
+                        <br><br>✨ برای شروع یک آهنگ جستجو کن!
+                    </div>
+                `;
+            }, 500);
+        </script>
+    </body>
+    </html>
+    '''
+
 # ---------- هندلرهای ربات ----------
 
 @bot.message_handler(commands=['start'])
@@ -243,11 +541,12 @@ def handle_start(message):
         "🧪 /status - وضعیت سرور\n\n"
         "💡 <b>راهنما:</b>\n"
         "• می‌توانید لینک Radio Javan را مستقیماً ارسال کنید\n"
-        "• برای جستجو بهتر از نام فارسی استفاده کنید\n\n"
+        "• برای جستجو بهتر از نام فارسی استفاده کنید\n"
+        "• از Mini App برای تجربه بهتر استفاده کنید\n\n"
         "🔗 ساخته شده با ❤️ برای بهنوش\n"
         "🚀 میزبانی شده در Render"
     )
-    bot.reply_to(message, welcome)
+    bot.reply_to(message, welcome, reply_markup=create_main_keyboard())
 
 @bot.message_handler(commands=['status'])
 def handle_status(message):
@@ -261,6 +560,7 @@ def handle_status(message):
             f"🤖 ربات: ✅ آنلاین\n"
             f"🌐 API Radio Javan: {api_status}\n"
             f"🏠 پلتفرم: Render.com\n"
+            f"📱 Mini App: {'✅ فعال' if WEBHOOK_URL else '❌ غیرفعال'}\n"
             f"⏰ زمان سرور: {time.strftime('%H:%M:%S')}\n"
             f"💝 وضعیت: آماده خدمت به بهنوش"
         )
@@ -537,12 +837,58 @@ def handle_playlist(message):
         logger.error(f"Error in playlist handler: {e}")
         bot.reply_to(message, f"❌ خطای داخلی: {str(e)}")
 
+# ---------- هندلر WebApp Data ----------
+
+@bot.message_handler(content_types=['web_app_data'])
+def handle_web_app_data(message):
+    """پردازش داده‌های دریافتی از Mini App"""
+    try:
+        data = message.web_app_data.data
+        logger.info(f"WebApp data received: {data}")
+        
+        if data.startswith('search:'):
+            query = data.replace('search:', '').strip()
+            if query:
+                # شبیه‌سازی دستور search
+                message.text = f'/search {query}'
+                handle_search(message)
+            else:
+                bot.reply_to(message, "❌ نام آهنگ خالی است")
+            
+        elif data.startswith('new:'):
+            # شبیه‌سازی دستور new
+            handle_new(message)
+            
+        elif data.startswith('popular:'):
+            # جستجوی آهنگ‌های محبوب
+            message.text = '/search محبوب'
+            handle_search(message)
+            
+        else:
+            bot.reply_to(message, f"💝 سلام بهنوش! از Mini App استفاده کردی\n\nداده دریافت شده: {data}")
+            
+    except Exception as e:
+        logger.error(f"Error handling web app data: {e}")
+        bot.reply_to(message, "❌ خطا در پردازش درخواست Mini App")
+
 # ---------- هندلر کال‌بک‌ها ----------
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback(call):
     try:
         data_parts = call.data.split('_')
+        
+        # هندل کردن دکمه‌های سریع
+        if call.data == 'quick_new':
+            bot.answer_callback_query(call.id, "🆕 در حال دریافت آهنگ‌های جدید...")
+            handle_new(call.message)
+            return
+            
+        elif call.data == 'quick_status':
+            bot.answer_callback_query(call.id, "📊 بررسی وضعیت...")
+            handle_status(call.message)
+            return
+        
         if len(data_parts) < 3:
             bot.answer_callback_query(call.id, "❌ خطا در پردازش درخواست")
             return
