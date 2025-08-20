@@ -1,3 +1,4 @@
+```python
 import os
 import json
 import logging
@@ -5,6 +6,7 @@ import requests
 from typing import Dict, Any, Tuple
 from flask import Flask, request, jsonify, render_template_string
 from datetime import datetime
+import re
 
 # تنظیمات لاگ
 logging.basicConfig(
@@ -90,6 +92,13 @@ def test_api_on_startup():
     except Exception as e:
         logger.error(f"API Test Error: {e}")
 
+def normalize_query(query: str) -> str:
+    """نرمال‌سازی کوئری جستجو"""
+    query = query.strip()
+    query = re.sub(r'\s+', ' ', query)  # حذف فاصله‌های اضافی
+    query = query.title()  # تبدیل به فرمت Title Case
+    return query
+
 def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any]:
     """API call صحیح با تشخیص کامل"""
     try:
@@ -150,25 +159,25 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
 def format_music_results(data: Dict, query: str) -> str:
     """فرمت کردن نتایج موسیقی"""
     logger.info(f"🔧 format_music_results called with query: {query}")
-    logger.info(f"🔧 Data type: {type(data)}")
+    logger.info(f"🔧 Data type: {stype(data)}")
     
     if not isinstance(data, dict):
         logger.error(f"❌ Data is not dict: {type(data)}")
-        return generate_sample_results(query)
+        return f"❌ خطا در دریافت اطلاعات برای '{query}'. لطفاً دوباره تلاش کنید یا املای نام را بررسی کنید."
     
     if not data.get('ok'):
-        logger.error(f"❌ API returned ok=false")
-        return generate_sample_results(query)
+        logger.error(f"❌ API returned ok=false: {data.get('message', 'No message')}")
+        return f"❌ هیچ نتیجه‌ای برای '{query}' پیدا نشد.\n\nپیشنهاد: املای نام را بررسی کنید (مثال: 'Shadmehr Aghili') یا نام دیگری را امتحان کنید."
     
     result = data.get('result', {})
     if not result:
         logger.error(f"❌ No result in data")
-        return generate_sample_results(query)
+        return f"❌ هیچ نتیجه‌ای برای '{query}' پیدا نشد.\n\nپیشنهاد: املای نام را بررسی کنید یا نام دیگری را امتحان کنید."
     
     search_result = result.get('search_result', {})
     if not search_result:
         logger.error(f"❌ No search_result in result")
-        return generate_sample_results(query)
+        return f"❌ هیچ نتیجه‌ای برای '{query}' پیدا نشد.\n\nپیشنهاد: املای نام را بررسی کنید یا نام دیگری را امتحان کنید."
     
     logger.info(f"✅ search_result keys: {list(search_result.keys())}")
     
@@ -180,7 +189,7 @@ def format_music_results(data: Dict, query: str) -> str:
     
     if not musics and not videos and not artists:
         logger.warning(f"⚠️ No results found for: {query}")
-        return f"❌ هیچ آهنگی برای '{query}' پیدا نشد\n\n" + generate_sample_results(query)
+        return f"❌ هیچ نتیجه‌ای برای '{query}' پیدا نشد.\n\nپیشنهاد: املای نام را بررسی کنید یا نام دیگری را امتحان کنید."
     
     results = []
     results.append(f"🎵 نتایج جستجو برای '{query}':\n")
@@ -194,7 +203,7 @@ def format_music_results(data: Dict, query: str) -> str:
         artist_name = music_data.get('artist_name', {})
         song_name = music_data.get('song_name', {})
         share_link = music_data.get('share_link', '')
-        audio_url = music_data.get('audio_url', '')  # Assuming API provides audio URL
+        audio_url = music_data.get('audio_url', '')  # فرض بر این است که API لینک صوتی ارائه می‌دهد
         
         artist = artist_name.get('fa') or artist_name.get('en') or 'نامشخص'
         song = song_name.get('fa') or song_name.get('en') or ''
@@ -203,10 +212,10 @@ def format_music_results(data: Dict, query: str) -> str:
         result_text += f"👤 آرتیست: {artist}\n"
         if song:
             result_text += f"🎼 آهنگ: {song}\n"
-        if share_link:
-            result_text += f"🔗 لینک: {share_link}\n"
         if audio_url:
             result_text += f"🎧 پخش: {audio_url}\n"
+        if share_link:
+            result_text += f"🔗 دانلود: {share_link}\n"
         
         results.append(result_text)
         count += 1
@@ -224,27 +233,13 @@ def format_music_results(data: Dict, query: str) -> str:
         result_text = f"🎬 {title}\n"
         result_text += f"👤 آرتیست: {artist}\n"
         if share_link:
-            result_text += f"🔗 لینک: {share_link}\n"
+            result_text += f"🔗 دانلود: {share_link}\n"
         
         results.append(result_text)
         count += 1
     
     logger.info(f"✅ Formatted {len(results)-1} results for query: {query}")
     return '\n'.join(results)
-
-def generate_sample_results(query: str) -> str:
-    """تولید نتایج نمونه"""
-    return f"""🎵 نتایج نمونه:
-
-🎵 آهنگ مرتبط با {query}
-👤 آرتیست: آرتیست نمونه
-⏱ مدت: 03:45
-🔗 لینک: https://example.com/sample-song
-
-🎵 آهنگ زیبای ایرانی
-👤 آرتیست: خواننده محبوب
-⏱ مدت: 04:12
-🔗 لینک: https://example.com/popular-song"""
 
 def send_telegram_message(chat_id: int, text: str, reply_markup=None):
     """ارسال پیام تلگرام"""
@@ -278,15 +273,16 @@ def handle_search_command(message_text: str, chat_id: int):
             query = message_text.strip()
         
         if not query:
-            send_telegram_message(chat_id, "❌ لطفاً نام آهنگ یا خواننده را وارد کنید\n\nمثال: /search محسن یگانه")
+            send_telegram_message(chat_id, "❌ لطفاً نام آهنگ یا خواننده را وارد کنید\n\nمثال: /search Mohsen Yeganeh")
             return
         
+        query = normalize_query(query)
         logger.info(f"🔍 Search query: {query}")
         
         success, data = safe_api_call('search', {'query': query})
         
         if not success:
-            error_msg = f"❌ خطا در جستجو: {data}\n\n" + generate_sample_results(query)
+            error_msg = f"❌ خطا در جستجو: {data}\n\nپیشنهاد: املای نام را بررسی کنید یا نام دیگری را امتحان کنید."
             send_telegram_message(chat_id, error_msg)
             return
         
@@ -295,7 +291,7 @@ def handle_search_command(message_text: str, chat_id: int):
         
     except Exception as e:
         logger.error(f"❌ Error in handle_search_command: {e}")
-        error_msg = f"❌ خطا در پردازش جستجو\n\n" + generate_sample_results(query if 'query' in locals() else 'نامشخص')
+        error_msg = f"❌ خطا در پردازش جستجو\n\nپیشنهاد: املای نام را بررسی کنید یا نام دیگری را امتحان کنید."
         send_telegram_message(chat_id, error_msg)
 
 @app.route('/webhook', methods=['POST'])
@@ -354,6 +350,7 @@ def api_search():
         if not query:
             return jsonify({'error': 'Query is required'}), 400
         
+        query = normalize_query(query)
         logger.info(f"🔍 Mini App search: {query}")
         
         success, api_data = safe_api_call('search', {'query': query})
@@ -500,6 +497,25 @@ def index():
         .download-btn:hover {
             background: #00cc00;
         }
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        .suggestion-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #00ffff;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .suggestion-btn:hover {
+            background: #00cccc;
+        }
         .loading {
             text-align: center;
             font-size: 18px;
@@ -540,16 +556,20 @@ def index():
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        
-        document.body.style.backgroundColor = tg.themeParams.bg_color || '#4b0082';
+        let tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            document.body.style.backgroundColor = tg.themeParams.bg_color || '#4b0082';
+        } else {
+            console.error('Telegram WebApp not loaded');
+        }
 
         function searchMusic() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
-                tg.showAlert('Please enter a song or artist name');
+                if (tg) tg.showAlert('Please enter a song or artist name');
+                else alert('Please enter a song or artist name');
                 return;
             }
 
@@ -573,16 +593,26 @@ def index():
             })
             .catch(error => {
                 console.error('Error:', error);
-                resultsDiv.innerHTML = '<div class="result-item">❌ Search Error</div>';
-                tg.showAlert('Error occurred during search');
+                resultsDiv.innerHTML = '<div class="error-message">❌ Search Error. Please try again.</div>';
+                if (tg) tg.showAlert('Error occurred during search');
             });
         }
 
         function displayResults(data, query) {
             const resultsDiv = document.getElementById('results');
             
-            if (!data.result || !data.result.search_result) {
-                resultsDiv.innerHTML = '<div class="result-item">❌ No results found</div>';
+            if (!data.ok || !data.result || !data.result.search_result) {
+                let suggestions = '';
+                if (query.toLowerCase().includes('shadmehr')) {
+                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">Did you mean Shadmehr Aghili?</button></div>';
+                }
+                resultsDiv.innerHTML = `
+                    <div class="error-message">
+                        ❌ No results found for "${query}".
+                        <br><br>
+                        Suggestions: Check the spelling or try a different artist/song.
+                        ${suggestions}
+                    </div>`;
                 return;
             }
 
@@ -628,7 +658,17 @@ def index():
             }
             
             if (count === 0) {
-                html = '<div class="result-item">❌ No results found</div>';
+                let suggestions = '';
+                if (query.toLowerCase().includes('shadmehr')) {
+                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Agh bleak; searchMusic();">Did you mean Shadmehr Aghili?</button></div>';
+                }
+                html = `
+                    <div class="error-message">
+                        ❌ No results found for "${query}".
+                        <br><br>
+                        Suggestions: Check the spelling or try a different artist/song.
+                        ${suggestions}
+                    </div>`;
             }
             
             resultsDiv.innerHTML = html;
@@ -672,3 +712,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
