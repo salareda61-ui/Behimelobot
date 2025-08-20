@@ -4,7 +4,7 @@
 """
 behimelobot - ربات موسیقی کامل برای Radio Javan
 ساخته شده برای دختری زیبا راپونزل ایرانی بهنوش
-نسخه کامل با Mini App تعاملی واقعی که مستقیماً جستجو می‌کند
+نسخه کامل با Mini App تعاملی واقعی + پشتیبانی از Secret Files
 """
 
 import telebot
@@ -19,10 +19,29 @@ from typing import Any, Dict, List, Optional, Tuple
 from flask import Flask, request, jsonify
 import threading
 
+# ---------- بارگذاری Secret Files ----------
+def load_env_from_secrets():
+    """خواندن متغیرهای محیطی از Secret File"""
+    try:
+        with open('/etc/secrets/.env', 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and '=' in line and not line.startswith('#'):
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip()
+        logging.info("✅ Secret file loaded successfully")
+    except FileNotFoundError:
+        logging.warning("⚠️ Secret file not found, using environment variables")
+    except Exception as e:
+        logging.error(f"❌ Error loading secret file: {e}")
+
+# بارگذاری متغیرها
+load_env_from_secrets()
+
 # ---------- تنظیمات ----------
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 ACCESS_KEY = os.environ.get("ACCESS_KEY")
-API_BASE = "https://api.ineo-team.ir/rj.php"
+API_BASE = os.environ.get("API_BASE", "https://api.ineo-team.ir/rj.php")
 PORT = int(os.environ.get("PORT", 10000))
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
@@ -185,6 +204,7 @@ def home():
             <div class="status">
                 <h3>✅ ربات با موفقیت روی Render در حال اجرا است</h3>
                 <p>🔧 نسخه کامل با Mini App تعاملی واقعی</p>
+                <p>🔐 Secret Files پشتیبانی می‌شود</p>
                 <p>🚀 آماده خدمت‌رسانی</p>
             </div>
             <p>🔗 با عشق برای بهنوش ❤️</p>
@@ -329,7 +349,6 @@ def webapp():
         </div>
 
         <script>
-            // تنظیمات Telegram Web App
             let tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
@@ -427,14 +446,12 @@ def webapp():
 
             function playSong(index, title, url) {
                 if (url && url !== '#' && url !== 'https://example.com/song1.mp3' && url !== 'https://example.com/song2.mp3') {
-                    // آهنگ واقعی
                     tg.showConfirm(`آیا می‌خواهید "${title}" را پخش کنید?`, (confirmed) => {
                         if (confirmed) {
                             window.open(url, '_blank');
                         }
                     });
                 } else {
-                    // آهنگ نمونه
                     tg.showAlert(`💝 عزیز بهنوش!\\n\\n🎵 "${title}"\\n\\n🔧 این یک آهنگ نمونه است\\n❤️ برای دسترسی به آهنگ‌های واقعی، API باید فعال باشد`);
                 }
             }
@@ -443,16 +460,13 @@ def webapp():
                 document.getElementById('result').innerHTML = `<div class="result">${message}</div>`;
             }
 
-            // تنظیمات اولیه
             document.addEventListener('DOMContentLoaded', function() {
-                // تنظیم theme بر اساس Telegram
                 if (tg.themeParams) {
                     document.body.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#1a0033');
                     document.body.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#ffffff');
                     document.body.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#ff6ec0');
                 }
 
-                // نمایش پیام خوش‌آمدگویی
                 showResult(`
                     <h3 style="color: #ff6ec0;">🌟 خوش آمدی به Mini App بهیملوبات!</h3>
                     <p>🎵 حالا می‌تونی مستقیماً از اینجا آهنگ جستجو کنی</p>
@@ -465,8 +479,6 @@ def webapp():
     </html>
     """
 
-# ---------- API Routes برای Mini App ----------
-
 @app.route('/api/search', methods=['POST'])
 def api_search():
     """API endpoint برای جستجو از مینی اپ"""
@@ -477,7 +489,6 @@ def api_search():
         if not query:
             return jsonify({'success': False, 'message': 'کوئری خالی است'})
         
-        # فراخوانی API
         success, api_data = safe_api_call("search", {"query": query})
         
         if success:
@@ -489,7 +500,6 @@ def api_search():
                     'message': f'{len(songs)} آهنگ پیدا شد'
                 })
             else:
-                # استفاده از آهنگ‌های نمونه
                 mock_songs = create_mock_songs(query)
                 return jsonify({
                     'success': True,
@@ -497,7 +507,6 @@ def api_search():
                     'message': 'نتایج نمونه (API غیرفعال)'
                 })
         else:
-            # خطا در API - استفاده از نمونه
             mock_songs = create_mock_songs(query)
             return jsonify({
                 'success': True,
@@ -513,7 +522,6 @@ def api_search():
 def api_new():
     """API endpoint برای آهنگ‌های جدید از مینی اپ"""
     try:
-        # فراخوانی API
         success, api_data = safe_api_call("new", {"type": "music"})
         
         if success:
@@ -525,7 +533,6 @@ def api_new():
                     'message': f'{len(songs)} آهنگ جدید'
                 })
             else:
-                # استفاده از آهنگ‌های نمونه
                 mock_songs = create_mock_songs("جدیدترین")
                 return jsonify({
                     'success': True,
@@ -533,7 +540,6 @@ def api_new():
                     'message': 'آهنگ‌های نمونه (API غیرفعال)'
                 })
         else:
-            # خطا در API - استفاده از نمونه
             mock_songs = create_mock_songs("جدیدترین")
             return jsonify({
                 'success': True,
@@ -567,6 +573,7 @@ def health():
         "message": "آماده خدمت به بهنوش",
         "api": "Radio Javan API v4",
         "webapp": "Interactive Mini App",
+        "secret_files": "Supported",
         "timestamp": time.time()
     }), 200
 
@@ -711,6 +718,64 @@ def new_handler(message):
         logger.error(f"Error in new handler: {e}")
         bot.reply_to(message, f"❌ خطای داخلی: {str(e)}")
 
+@bot.message_handler(commands=['artist'])
+def artist_handler(message):
+    try:
+        artist = message.text.replace('/artist', '').strip()
+        if not artist:
+            bot.reply_to(
+                message, 
+                "👤 لطفاً نام آرتیست را وارد کنید\n\n"
+                "📝 <b>مثال:</b> <code>/artist محسن یگانه</code>"
+            )
+            return
+        
+        processing_msg = bot.reply_to(message, f"👤 در حال جستجو آهنگ‌های {artist}...")
+        
+        success, data = safe_api_call("artist", {"artist": artist})
+        
+        try:
+            bot.delete_message(message.chat.id, processing_msg.message_id)
+        except:
+            pass
+        
+        if success:
+            songs = extract_songs_safe(data)
+            if not songs:
+                songs = create_mock_songs(f"آرتیست {artist}")
+                bot.reply_to(message, f"❌ هیچ آهنگی برای آرتیست '<b>{artist}</b>' پیدا نشد\n\n🎵 <b>نتایج نمونه:</b>")
+            else:
+                bot.reply_to(message, f"✅ <b>{len(songs)} آهنگ پیدا شد برای آرتیست '{artist}':</b>")
+        else:
+            songs = create_mock_songs(f"آرتیست {artist}")
+            bot.reply_to(message, f"⚠️ <b>خطا در API:</b> {data}\n\n🎵 <b>نتایج نمونه:</b>")
+        
+        for song in songs:
+            try:
+                title = song.get('title', 'نامشخص')
+                song_artist = song.get('artist', artist)
+                duration = song.get('duration', '')
+                
+                song_info = f"🎵 <b>{title}</b>"
+                if song_artist:
+                    song_info += f"\n👤 آرتیست: {song_artist}"
+                if duration:
+                    song_info += f"\n⏱ مدت: {duration}"
+                
+                keyboard = InlineKeyboardMarkup()
+                keyboard.add(InlineKeyboardButton("🎵 پخش", callback_data=f"play_{song.get('id', 'mock')}"))
+                
+                bot.send_message(message.chat.id, song_info, reply_markup=keyboard)
+                time.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"Error sending artist song: {e}")
+                continue
+                
+    except Exception as e:
+        logger.error(f"Error in artist handler: {e}")
+        bot.reply_to(message, f"❌ خطای داخلی: {str(e)}")
+
 @bot.message_handler(commands=['status'])
 def status_handler(message):
     try:
@@ -723,6 +788,7 @@ def status_handler(message):
             f"🌐 Radio Javan API v4: {api_status}\n"
             f"📱 Mini App تعاملی: ✅ فعال\n"
             f"🏠 پلتفرم: Render.com\n"
+            f"🔐 Secret Files: ✅ پشتیبانی می‌شود\n"
             f"🔑 ACCESS_KEY: {'✅ تنظیم شده' if ACCESS_KEY else '❌ تنظیم نشده'}\n"
             f"⏰ زمان سرور: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"💝 وضعیت: آماده خدمت به بهنوش"
@@ -733,6 +799,37 @@ def status_handler(message):
     except Exception as e:
         logger.error(f"Error in status handler: {e}")
         bot.reply_to(message, f"❌ خطا در دریافت وضعیت: {str(e)}")
+
+@bot.message_handler(commands=['help'])
+def help_handler(message):
+    try:
+        help_text = (
+            "📖 <b>راهنمای کامل Behimelobot:</b>\n\n"
+            "🔍 <b>جستجو آهنگ:</b>\n"
+            "• <code>/search [نام آهنگ]</code>\n"
+            "• مثال: <code>/search دل دیوونه</code>\n\n"
+            "👤 <b>جستجو آرتیست:</b>\n"
+            "• <code>/artist [نام آرتیست]</code>\n"
+            "• مثال: <code>/artist محسن یگانه</code>\n\n"
+            "🆕 <b>آهنگ‌های جدید:</b>\n"
+            "• <code>/new</code>\n\n"
+            "📊 <b>وضعیت ربات:</b>\n"
+            "• <code>/status</code>\n\n"
+            "📱 <b>Mini App تعاملی:</b>\n"
+            "• از دکمه 'Mini App' استفاده کنید\n"
+            "• جستجو مستقیم بدون دستور\n\n"
+            "💡 <b>نکات:</b>\n"
+            "• می‌توانید مستقیماً نام آهنگ بنویسید\n"
+            "• از کلمات فارسی و انگلیسی استفاده کنید\n"
+            "• برای نتایج بهتر از Mini App استفاده کنید\n\n"
+            "💝 با عشق برای بهنوش ❤️"
+        )
+        
+        bot.reply_to(message, help_text)
+        
+    except Exception as e:
+        logger.error(f"Error in help handler: {e}")
+        bot.reply_to(message, "❌ خطا در نمایش راهنما")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
@@ -794,7 +891,7 @@ def keep_alive():
 
 def main():
     """تابع اصلی"""
-    logger.info("🚀 Starting Behimelobot (Interactive WebApp Version) for Behnosh...")
+    logger.info("🚀 Starting Behimelobot (Interactive WebApp + Secret Files) for Behnosh...")
     
     try:
         if not TELEGRAM_TOKEN:
