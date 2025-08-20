@@ -24,15 +24,7 @@ API_BASE = None
 WEBHOOK_URL = None
 PORT = None
 
-def load_env_from_secrets()
-
-# چک کردن PORT در شروع
-if PORT != int(os.getenv('PORT', 4000)):
-    logger.warning(f"⚠️ PORT mismatch detected!")
-    logger.warning(f"   Environment PORT: {os.getenv('PORT')}")
-    logger.warning(f"   Configured PORT: {PORT}")
-    PORT = int(os.getenv('PORT', 4000))
-    logger.info(f"✅ PORT corrected to: {PORT}"):
+def load_env_from_secrets():
     """بارگذاری متغیرهای محیطی از Secret Files"""
     global TELEGRAM_TOKEN, ACCESS_KEY, API_BASE, WEBHOOK_URL, PORT
     
@@ -69,6 +61,14 @@ if PORT != int(os.getenv('PORT', 4000)):
         logger.info("✅ All required variables loaded successfully")
 
 load_env_from_secrets()
+
+# چک کردن PORT در شروع
+if PORT != int(os.getenv('PORT', 4000)):
+    logger.warning(f"⚠️ PORT mismatch detected!")
+    logger.warning(f"   Environment PORT: {os.getenv('PORT')}")
+    logger.warning(f"   Configured PORT: {PORT}")
+    PORT = int(os.getenv('PORT', 4000))
+    logger.info(f"✅ PORT corrected to: {PORT}")
 
 def test_api_on_startup():
     """تست API در startup"""
@@ -426,6 +426,16 @@ def health():
         'access_key_set': bool(ACCESS_KEY),
         'telegram_token_set': bool(TELEGRAM_TOKEN),
         'webhook_url_set': bool(WEBHOOK_URL)
+    })
+
+@app.route('/port-check')
+def port_check():
+    """بررسی وضعیت پورت"""
+    return jsonify({
+        'port': PORT,
+        'status': 'configured',
+        'server_running': True,
+        'timestamp': datetime.now().isoformat()
     })
 
 @app.route('/debug')
@@ -838,6 +848,10 @@ def set_webhook():
 def main():
     """تابع اصلی"""
     logger.info("🚀 Starting BehimeloBot...")
+    
+    # بارگذاری مجدد متغیرها برای اطمینان
+    load_env_from_secrets()
+    
     logger.info(f"🔧 Configuration:")
     logger.info(f"   - PORT: {PORT}")
     logger.info(f"   - API_BASE: {API_BASE}")
@@ -859,10 +873,19 @@ def main():
     # اطمینان از اینکه Flask روی port صحیح اجرا می‌شود
     try:
         app.run(host='0.0.0.0', port=PORT, debug=False)
+        logger.info(f"✅ Flask server started successfully on port {PORT}")
     except Exception as e:
         logger.error(f"❌ Failed to start Flask server: {e}")
         logger.error(f"❌ Make sure port {PORT} is available")
-        raise
+        
+        # تلاش با پورت جایگزین
+        alt_port = 4001
+        logger.info(f"🔄 Trying alternative port {alt_port}")
+        try:
+            app.run(host='0.0.0.0', port=alt_port, debug=False)
+        except Exception as alt_e:
+            logger.error(f"❌ Failed to start on alternative port {alt_port}: {alt_e}")
+            raise
 
 if __name__ == '__main__':
     main()
