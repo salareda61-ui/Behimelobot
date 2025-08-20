@@ -2,10 +2,8 @@ services:
   - type: web
     name: behimelobot
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python behimelobot_render.py"
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn behimelobot_render:app --bind 0.0.0.0:$PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.10.13"
       - key: PORT
-        value: "4000"
+        value: 4000
