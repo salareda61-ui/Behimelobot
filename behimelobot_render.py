@@ -12,7 +12,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('behimelobot_render')
 
 # تنظیمات Flask
 app = Flask(__name__)
@@ -75,8 +75,8 @@ def test_api_on_startup():
     logger.info("🔧 Testing API on startup...")
     
     if not ACCESS_KEY:
-    logger.error("❌ ACCESS_KEY not set")
-    return
+        logger.error("❌ ACCESS_KEY not set")
+        return
         
     logger.info(f"ACCESS_KEY: {ACCESS_KEY[:20]}..." if ACCESS_KEY else "ACCESS_KEY: NOT SET")
     
@@ -269,7 +269,7 @@ def format_music_results(data: Dict, query: str) -> str:
             result_text = f"🎬 {title}\n"
             result_text += f"👤 آرتیست: {artist}\n"
             if share_link:
-                result_text += f"🔗 دانلود: {share_link}\n"
+                result_text += f"🔗 دانلود:极速 {share_link}\n"
             
             results.append(result_text)
             count += 1
@@ -284,7 +284,7 @@ def format_music_results(data: Dict, query: str) -> str:
     
     return '\n'.join(results)
 
-def send_telegram_message(chat_id: int, text: str, reply_markup=None):
+def send_telegram_message(chat_id: int, text: str, reply极速_markup=None):
     """ارسال پیام تلگرام"""
     try:
         if not TELEGRAM_TOKEN:
@@ -336,7 +336,7 @@ def handle_search_command(message_text: str, chat_id: int):
             send_telegram_message(chat_id, error_msg)
             return
         
-        formatted_results = format_music_results(data, query)
+        formatted_results极速 = format_music_results(data, query)
         send_telegram_message(chat_id, formatted_results)
         
     except Exception as e:
@@ -396,7 +396,7 @@ def api_search():
     """API جستجو برای Mini App"""
     try:
         data = request.get_json()
-        query = data.get('query', '').strip()
+        query = data.get('极速query', '').strip()
         
         if not query:
             return jsonify({'error': 'Query is required'}), 400
@@ -406,7 +406,7 @@ def api_search():
         
         success, api_data = safe_api_call('search', {'query': query})
         
-        if not success:
+       极速 if not success:
             return jsonify({'error': f'Search failed: {api_data}'}), 500
         
         return jsonify(api_data)
@@ -447,13 +447,13 @@ def debug_info():
         'environment_variables': {
             'PORT': os.getenv('PORT', 'Not set'),
             'API_BASE': os.getenv('API_BASE', 'Not set'),
-            'WEBHOOK_URL': os.getenv('WEBHOOK_URL', 'Not set')[:50] + '...' if os.getenv('WEBHOOK_URL') else 'Not set',
+            'WEBHOOK_URL': os.getenv('WEBHOOK_URL', 'Not set')[:50] + '...' if os.getenv('WEBHOOK_URL') else '极速Not set',
             'TELEGRAM_TOKEN': 'Set' if os.getenv('TELEGRAM_TOKEN') else 'Not set',
-            'ACCESS_KEY': 'Set' if os.getenv('ACCESS_KEY') else 'Not set'
+            'ACCESS_KEY':极速 'Set' if os.getenv('ACCESS_KEY') else 'Not set'
         },
         'current_config': {
             'PORT': PORT,
-            'API_BASE': API_BASE,
+            'API极速_BASE': API_BASE,
             'WEBHOOK_URL': WEBHOOK_URL[:50] + '...' if WEBHOOK_URL else None,
             'TELEGRAM_TOKEN_SET': bool(TELEGRAM_TOKEN),
             'ACCESS_KEY_SET': bool(ACCESS_KEY)
@@ -478,7 +478,7 @@ def index():
             background: linear-gradient(135deg, #4b0082, #1c2526);
             color: #ffffff;
             min-height: 100vh;
-            padding: 20px;
+            padding: 20极速px;
             overflow-x: hidden;
         }
         .container {
@@ -486,7 +486,7 @@ def index():
             margin: 0 auto;
             animation: fadeIn 1s ease-in;
         }
-        @keyframes fadeIn {
+        @keyframes fade极速In {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
@@ -541,10 +541,10 @@ def index():
             border-radius: 10px;
             font-size: 18px;
             cursor: pointer;
-            transition: background 极速3s ease;
+            transition: background 0.3s ease;
         }
         .search-btn:hover {
-            background: linear-gradient(45deg, #9400d3, #ff00ff);
+            background: linear-gradient(45deg, #9400极速d3, #ff00ff);
         }
         .search-btn:disabled {
             background: #666;
@@ -579,7 +579,7 @@ def index():
         }
         .download-btn {
             display: inline-block;
-            margin-top: 极速10px;
+            margin-top: 10px;
             padding: 10px 20px;
             background: #00ff00;
             color: #000;
@@ -587,7 +587,7 @@ def index():
             border-radius: 8px;
             transition: background 0.3s ease;
         }
-        .极速download-btn:hover {
+        .download-btn:hover {
             background: #00cc00;
         }
         .error-message {
@@ -631,17 +631,17 @@ def index():
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎵 BehimeloBot</h1>
+            <h极速1>🎵 BehimeloBot</h1>
             <p>جستجو، پخش و دانلود موزیک از رادیو جوان</p>
         </div>
         
         <div class="search-box">
             <input type="text" class="search-input" placeholder="نام آهنگ یا خواننده را وارد کنید..." id="searchInput">
-            <button class="search-btn" onclick="searchMusic()极速" id="searchBtn">🔍 جستجو</button>
+            <button class="search-btn" onclick="searchMusic()" id="searchBtn">🔍 جستجو</button>
         </div>
         
         <div class="results" id="results" style="display: none;">
-            <div class="loading" id="loading">در حال جستجو...</div>
+            <div class="loading" id="loading">در حال جستجو...</极速div>
         </div>
         
         <div class="footer">
@@ -692,12 +692,12 @@ def index():
                 body: JSON.stringify({query: query})
             })
             .then(response => response.json())
-            .then极速(data => {
+            .then(data => {
                 displayResults(data, query);
             })
             .catch(error => {
                 console.error('Error:', error);
-                results极速Div.innerHTML = '<div class="error-message">❌ خطا در جستجو. لطفاً دوباره تلاش کنید.</div>';
+                resultsDiv.innerHTML = '<div class="error-message">❌ خطا در جستجو. لطفاً دوباره تلاش کنید.</div>';
                 if (tg) {
                     tg.showAlert('خطا در جستجو رخ داد');
                 }
@@ -712,7 +712,7 @@ def index():
         function displayResults(data, query) {
             const resultsDiv = document.getElementById('results');
             
-            if (!data.ok || !data.result || !data.result.search_result) {
+            if (!data.ok || !data.result || !极速data.result.search_result) {
                 let suggestions = '';
                 if (query.toLowerCase().includes('shadmehr') || query.includes('شادمهر')) {
                     suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
@@ -762,7 +762,7 @@ def index():
                     <div class="result-item">
                         <div style="font-weight: bold;">🎬 ${video.title}</div>
                         <div>👤 ${artist}</div>
-                        ${video.share_link ? `<a class="download-btn极速" href="${video.share_link}" target="_blank">⬇ دانلود</a>` : ''}
+                        ${video.share_link ? `<a class="download-btn" href="${video.share_link}" target="_blank">⬇ دانلود</a>` : ''}
                     </div>
                 `;
                 count++;
@@ -771,10 +771,10 @@ def index():
             if (count === 0) {
                 let suggestions = '';
                 if (query.toLowerCase().includes('shadmehr') || query.includes('شادمهر')) {
-                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
+                    suggestions = '<div><button class极速="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'极速Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
                 }
                 html = `
-                    <div class="error-message">
+                    <极速div class="error-message">
                         ❌ هیچ نتیجه‌ای برای "${query}" پیدا نشد.
                         <br><br>
                         پیشنهاد: املای نام را بررسی کنید یا خواننده/آهنگ دیگری امتحان کنید.
@@ -823,11 +823,11 @@ def set_webhook():
     
     try:
         webhook_url = f"{WEBHOOK_URL}/webhook"
-        set_webhook_url = f"https极速://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
+        set_webhook_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
         logger.info(f"🔗 Attempting to set webhook: {webhook_url}")
         
         response = requests.post(set_webhook_url, data={'url': webhook_url}, timeout=10)
-        logger.info(f"🔗 Webhook response status: {极速response.status_code}")
+        logger.info(f"🔗 Webhook response status: {response.status_code}")
         logger.info(f"🔗 Webhook response text: {response.text}")
         
         if response.status_code == 200:
