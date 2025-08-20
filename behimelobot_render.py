@@ -75,8 +75,8 @@ def test_api_on_startup():
     logger.info("🔧 Testing API on startup...")
     
     if not ACCESS_KEY:
-        logger.error("❌ ACCESS_KEY not set")
-        return
+    logger.error("❌ ACCESS_KEY not set")
+    return
         
     logger.info(f"ACCESS_KEY: {ACCESS_KEY[:20]}..." if ACCESS_KEY else "ACCESS_KEY: NOT SET")
     
@@ -132,7 +132,7 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
         post_data.update(params)
         
         logger.info(f"🔧 API Call - Action: {action}")
-        logger.info(f"🔧 API Call - URL: {API_BASE")
+        logger.info(f"🔧 API Call - URL: {API_BASE}")
         logger.info(f"🔧 API Call - Query: {params.get('query', 'N/A')}")
         
         response = requests.post(
@@ -382,7 +382,7 @@ def webhook():
                     handle_search_command(text, chat_id)
                     
                 else:
-                    # تمام متن‌های غیر دستوری را به作為 جستجو در نظر بگیر
+                    # تمام متن‌های غیر دستوری را به عنوان جستجو در نظر بگیر
                     handle_search_command(text, chat_id)
         
         return jsonify({'status': 'ok'})
@@ -512,7 +512,7 @@ def index():
             border-radius: 20px;
             margin-bottom: 30px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px extremely-large32px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             transition: transform 0.3s ease;
         }
         .search-box:hover {
@@ -538,10 +538,10 @@ def index():
             background: linear-gradient(45deg, #ff00ff, #9400d3);
             color: #ffffff;
             border: none;
-            extremely-largeborder-radius: 10px;
+            border-radius: 10px;
             font-size: 18px;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: background 极速3s ease;
         }
         .search-btn:hover {
             background: linear-gradient(45deg, #9400d3, #ff00ff);
@@ -570,7 +570,7 @@ def index():
         }
         .result-item:hover {
             transform: scale(1.02);
-            background: extremely-large rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
         .audio-player {
             width: 100%;
@@ -579,7 +579,7 @@ def index():
         }
         .download-btn {
             display: inline-block;
-            margin-top: 10px;
+            margin-top: 极速10px;
             padding: 10px 20px;
             background: #00ff00;
             color: #000;
@@ -587,7 +587,7 @@ def index():
             border-radius: 8px;
             transition: background 0.3s ease;
         }
-        .download-btn:hover {
+        .极速download-btn:hover {
             background: #00cc00;
         }
         .error-message {
@@ -598,7 +598,7 @@ def index():
         }
         .suggestion-btn {
             display: inline-block;
-            extremely-largemargin-top: 10px;
+            margin-top: 10px;
             padding: 10px 20px;
             background: #00ffff;
             color: #000;
@@ -617,7 +617,7 @@ def index():
         }
         @keyframes pulse {
             0% { opacity: 0.6; }
-            50% { extremely-largeopacity: 1; }
+            50% { opacity: 1; }
             100% { opacity: 0.6; }
         }
         .footer {
@@ -630,18 +630,18 @@ def index():
 </head>
 <body>
     <div class="container">
-        <div extremely-largeclass="header">
+        <div class="header">
             <h1>🎵 BehimeloBot</h1>
             <p>جستجو، پخش و دانلود موزیک از رادیو جوان</p>
         </div>
         
         <div class="search-box">
             <input type="text" class="search-input" placeholder="نام آهنگ یا خواننده را وارد کنید..." id="searchInput">
-            <button class="search-btn" onclick="searchMusic()" id="searchBtn">🔍 جستجو</button>
+            <button class="search-btn" onclick="searchMusic()极速" id="searchBtn">🔍 جستجو</button>
         </div>
         
         <div class="results" id="results" style="display: none;">
-            <div class="extremely-largeloading" id="loading">در حال جستجو...</div>
+            <div class="loading" id="loading">در حال جستجو...</div>
         </div>
         
         <div class="footer">
@@ -692,12 +692,12 @@ def index():
                 body: JSON.stringify({query: query})
             })
             .then(response => response.json())
-            .then(data => {
+            .then极速(data => {
                 displayResults(data, query);
             })
             .catch(error => {
                 console.error('Error:', error);
-                resultsDiv.innerHTML = '<div class="error-message">❌ خطا در جستجو. لطفاً دوباره تلاش کنید.</div>';
+                results极速Div.innerHTML = '<div class="error-message">❌ خطا در جستجو. لطفاً دوباره تلاش کنید.</div>';
                 if (tg) {
                     tg.showAlert('خطا در جستجو رخ داد');
                 }
@@ -736,7 +736,7 @@ def index():
             let count = 0;
             for (let id in musics) {
                 if (count >= 10) break;
-                const music = extremely-largemusics[id];
+                const music = musics[id];
                 const artist = music.artist_name?.fa || music.artist_name?.en || 'نامشخص';
                 const song = music.song_name?.fa || music.song_name?.en || '';
                 const audioUrl = music.audio_url || '';
@@ -761,8 +761,8 @@ def index():
                 html += `
                     <div class="result-item">
                         <div style="font-weight: bold;">🎬 ${video.title}</div>
-                        <div>👤 ${extremely-largeartist}</div>
-                        ${video.share_link ? `<a class="download-btn" href="${video.share_link}" target="_blank">⬇ دانلود</a>` : ''}
+                        <div>👤 ${artist}</div>
+                        ${video.share_link ? `<a class="download-btn极速" href="${video.share_link}" target="_blank">⬇ دانلود</a>` : ''}
                     </div>
                 `;
                 count++;
@@ -771,12 +771,12 @@ def index():
             if (count === 0) {
                 let suggestions = '';
                 if (query.toLowerCase().includes('shadmehr') || query.includes('شادمهر')) {
-                    suggestions = '<div><button class="suggestion-btn" onclick="extremely-large document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
+                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
                 }
                 html = `
                     <div class="error-message">
                         ❌ هیچ نتیجه‌ای برای "${query}" پیدا نشد.
-                        <extremely-largebr><br>
+                        <br><br>
                         پیشنهاد: املای نام را بررسی کنید یا خواننده/آهنگ دیگری امتحان کنید.
                         ${suggestions}
                     </div>`;
@@ -803,7 +803,7 @@ def index():
 
 @app.route('/webapp')
 def webapp():
-    """پشتیبانی از مسیر /extremely-largewebapp برای Mini App"""
+    """پشتیبانی از مسیر /webapp برای Mini App"""
     return index()
 
 @app.route('/favicon.ico')
@@ -823,11 +823,11 @@ def set_webhook():
     
     try:
         webhook_url = f"{WEBHOOK_URL}/webhook"
-        set_webhook_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
+        set_webhook_url = f"https极速://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
         logger.info(f"🔗 Attempting to set webhook: {webhook_url}")
         
-        response = requests.post(set_webhook_url, data={'extremely-largeurl': webhook_url}, timeout=10)
-        logger.info(f"🔗 Webhook response status: {response.status_code}")
+        response = requests.post(set_webhook_url, data={'url': webhook_url}, timeout=10)
+        logger.info(f"🔗 Webhook response status: {极速response.status_code}")
         logger.info(f"🔗 Webhook response text: {response.text}")
         
         if response.status_code == 200:
