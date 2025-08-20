@@ -4,7 +4,6 @@ import logging
 import requests
 from typing import Dict, Any, Tuple
 from flask import Flask, request, jsonify, render_template_string
-import time
 from datetime import datetime
 
 # تنظیمات لاگ
@@ -29,7 +28,6 @@ def load_env_from_secrets():
     global TELEGRAM_TOKEN, ACCESS_KEY, API_BASE, WEBHOOK_URL, PORT
     
     try:
-        # تلاش برای خواندن از فایل .env
         env_path = '/etc/secrets/.env'
         if os.path.exists(env_path):
             logger.info("✅ Loading from Secret Files (.env)")
@@ -43,14 +41,12 @@ def load_env_from_secrets():
     except Exception as e:
         logger.error(f"❌ Error loading secrets: {e}")
     
-    # دریافت متغیرها
     TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
     ACCESS_KEY = os.getenv('ACCESS_KEY')
     API_BASE = os.getenv('API_BASE', 'https://api.ineo-team.ir/rj.php')
     WEBHOOK_URL = os.getenv('WEBHOOK_URL')
     PORT = int(os.getenv('PORT', 10000))
     
-    # بررسی متغیرهای ضروری
     required_vars = {
         'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
         'ACCESS_KEY': ACCESS_KEY,
@@ -63,10 +59,8 @@ def load_env_from_secrets():
     else:
         logger.info("✅ All required variables loaded successfully")
 
-# بارگذاری متغیرهای محیطی
 load_env_from_secrets()
 
-# 🔧 تابع تست API در startup
 def test_api_on_startup():
     """تست API در startup"""
     logger.info("🔧 Testing API on startup...")
@@ -121,7 +115,7 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
             data=post_data,
             timeout=15,
             headers={
-                'User-Agent': 'Behimelobot/1.0',
+                'User-Agent': 'BehimeloBot/1.0',
                 'Accept': 'application/json',
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
@@ -138,8 +132,6 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
         try:
             data = response.json()
             logger.info(f"✅ JSON parsed successfully")
-            
-            # 🔧 لاگ‌های تشخیصی اضافه شده
             logger.info(f"✅ JSON Keys: {list(data.keys()) if isinstance(data, dict) else type(data)}")
             logger.info(f"✅ Result keys: {list(data.get('result', {}).keys()) if data.get('result') else 'No result'}")
             
@@ -157,8 +149,6 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
 
 def format_music_results(data: Dict, query: str) -> str:
     """فرمت کردن نتایج موسیقی"""
-    
-    # 🔧 لاگ‌های تشخیصی اضافه شده
     logger.info(f"🔧 format_music_results called with query: {query}")
     logger.info(f"🔧 Data type: {type(data)}")
     
@@ -166,7 +156,6 @@ def format_music_results(data: Dict, query: str) -> str:
         logger.error(f"❌ Data is not dict: {type(data)}")
         return generate_sample_results(query)
     
-    # بررسی وجود ok و status
     if not data.get('ok'):
         logger.error(f"❌ API returned ok=false")
         return generate_sample_results(query)
@@ -181,10 +170,8 @@ def format_music_results(data: Dict, query: str) -> str:
         logger.error(f"❌ No search_result in result")
         return generate_sample_results(query)
     
-    # 🔧 لاگ اضافی برای search_result
     logger.info(f"✅ search_result keys: {list(search_result.keys())}")
     
-    # دریافت موسیقی‌ها
     musics = search_result.get('musics', {})
     videos = search_result.get('videos', {})
     artists = search_result.get('artists', [])
@@ -195,37 +182,35 @@ def format_music_results(data: Dict, query: str) -> str:
         logger.warning(f"⚠️ No results found for: {query}")
         return f"❌ هیچ آهنگی برای '{query}' پیدا نشد\n\n" + generate_sample_results(query)
     
-    # فرمت کردن نتایج
     results = []
     results.append(f"🎵 نتایج جستجو برای '{query}':\n")
     
-    # نمایش موسیقی‌ها
     count = 0
     for music_id, music_data in musics.items():
-        if count >= 10:  # حداکثر 10 نتیجه
+        if count >= 10:
             break
         
         title = music_data.get('title', 'نامشخص')
         artist_name = music_data.get('artist_name', {})
         song_name = music_data.get('song_name', {})
         share_link = music_data.get('share_link', '')
+        audio_url = music_data.get('audio_url', '')  # Assuming API provides audio URL
         
-        # نام آرتیست
         artist = artist_name.get('fa') or artist_name.get('en') or 'نامشخص'
         song = song_name.get('fa') or song_name.get('en') or ''
         
-        # فرمت نتیجه
         result_text = f"🎵 {title}\n"
         result_text += f"👤 آرتیست: {artist}\n"
         if song:
             result_text += f"🎼 آهنگ: {song}\n"
         if share_link:
             result_text += f"🔗 لینک: {share_link}\n"
+        if audio_url:
+            result_text += f"🎧 پخش: {audio_url}\n"
         
         results.append(result_text)
         count += 1
     
-    # نمایش ویدیوها
     for video_id, video_data in videos.items():
         if count >= 10:
             break
@@ -254,10 +239,12 @@ def generate_sample_results(query: str) -> str:
 🎵 آهنگ مرتبط با {query}
 👤 آرتیست: آرتیست نمونه
 ⏱ مدت: 03:45
+🔗 لینک: https://example.com/sample-song
 
 🎵 آهنگ زیبای ایرانی
 👤 آرتیست: خواننده محبوب
-⏱ مدت: 04:12"""
+⏱ مدت: 04:12
+🔗 لینک: https://example.com/popular-song"""
 
 def send_telegram_message(chat_id: int, text: str, reply_markup=None):
     """ارسال پیام تلگرام"""
@@ -285,9 +272,8 @@ def send_telegram_message(chat_id: int, text: str, reply_markup=None):
 def handle_search_command(message_text: str, chat_id: int):
     """پردازش دستور جستجو"""
     try:
-        # استخراج کلمه جستجو
         if message_text.startswith('/search'):
-            query = message_text[7:].strip()  # حذف '/search'
+            query = message_text[7:].strip()
         else:
             query = message_text.strip()
         
@@ -297,7 +283,6 @@ def handle_search_command(message_text: str, chat_id: int):
         
         logger.info(f"🔍 Search query: {query}")
         
-        # جستجو در API
         success, data = safe_api_call('search', {'query': query})
         
         if not success:
@@ -305,10 +290,7 @@ def handle_search_command(message_text: str, chat_id: int):
             send_telegram_message(chat_id, error_msg)
             return
         
-        # فرمت کردن نتایج
         formatted_results = format_music_results(data, query)
-        
-        # ارسال نتایج
         send_telegram_message(chat_id, formatted_results)
         
     except Exception as e:
@@ -331,16 +313,16 @@ def webhook():
                 text = message['text']
                 
                 if text.startswith('/start'):
-                    welcome_msg = """🎵 سلام! به ربات بهیمه لو خوش آمدید!
+                    welcome_msg = """🎵 Welcome to BehimeloBot!
 
-🔍 برای جستجو آهنگ از دستور زیر استفاده کنید:
-/search نام آهنگ یا خواننده
+🔍 To search for a song, use the command below:
+/search song or artist name
 
-📱 یا از Mini App استفاده کنید!
+📱 Or use our Mini App to search, play, and download music!
 
-مثال:
-/search محسن یگانه
-/search عاشقانه"""
+Example:
+/search Mohsen Yeganeh
+/search romantic"""
                     
                     keyboard = {
                         'inline_keyboard': [[
@@ -354,7 +336,6 @@ def webhook():
                     handle_search_command(text, chat_id)
                     
                 else:
-                    # جستجو بدون دستور
                     handle_search_command(text, chat_id)
         
         return jsonify({'status': 'ok'})
@@ -375,13 +356,11 @@ def api_search():
         
         logger.info(f"🔍 Mini App search: {query}")
         
-        # جستجو در API
         success, api_data = safe_api_call('search', {'query': query})
         
         if not success:
             return jsonify({'error': f'Search failed: {api_data}'}), 500
         
-        # بازگرداندن نتایج خام برای Mini App
         return jsonify(api_data)
         
     except Exception as e:
@@ -403,97 +382,174 @@ def index():
     """صفحه اصلی Mini App"""
     html_template = """
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>بهیمه لو - جستجو موزیک</title>
+    <title>BehimeloBot - Music Search</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #4b0082, #1c2526);
+            color: #ffffff;
             min-height: 100vh;
             padding: 20px;
+            overflow-x: hidden;
         }
-        .container { max-width: 600px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .search-box { 
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 1s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        .header h1 {
+            font-size: 2.8em;
+            background: linear-gradient(to right, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        .search-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
             backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
         }
-        .search-input { 
+        .search-box:hover {
+            transform: translateY(-5px);
+        }
+        .search-input {
             width: 100%;
             padding: 15px;
             border: none;
             border-radius: 10px;
             font-size: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
             margin-bottom: 15px;
         }
-        .search-btn { 
+        .search-input::placeholder {
+            color: #cccccc;
+        }
+        .search-btn {
             width: 100%;
             padding: 15px;
-            background: #4CAF50;
-            color: white;
+            background: linear-gradient(45deg, #ff00ff, #9400d3);
+            color: #ffffff;
             border: none;
             border-radius: 10px;
             font-size: 18px;
             cursor: pointer;
+            transition: background 0.3s ease;
         }
-        .search-btn:hover { background: #45a049; }
-        .results { 
-            background: rgba(255,255,255,0.1);
+        .search-btn:hover {
+            background: linear-gradient(45deg, #9400d3, #ff00ff);
+        }
+        .results {
+            background: rgba(0, 0, 0, 0.5);
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 20px;
             backdrop-filter: blur(10px);
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #ff00ff #333;
         }
-        .result-item { 
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            margin-bottom: 10px;
+        .result-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            transition: transform 0.2s ease;
+        }
+        .result-item:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .audio-player {
+            width: 100%;
+            margin-top: 10px;
             border-radius: 10px;
         }
-        .loading { text-align: center; font-size: 18px; }
+        .download-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #00ff00;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+        .download-btn:hover {
+            background: #00cc00;
+        }
+        .loading {
+            text-align: center;
+            font-size: 18px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎵 بهیمه لو</h1>
-            <p>جستجو در رادیو جوان</p>
+            <h1>🎵 BehimeloBot</h1>
+            <p>Search, Play, and Download Music from Radio Javan</p>
         </div>
         
         <div class="search-box">
-            <input type="text" class="search-input" placeholder="نام آهنگ یا خواننده را وارد کنید..." id="searchInput">
-            <button class="search-btn" onclick="searchMusic()">🔍 جستجو</button>
+            <input type="text" class="search-input" placeholder="Enter song or artist name..." id="searchInput">
+            <button class="search-btn" onclick="searchMusic()">🔍 Search</button>
         </div>
         
         <div class="results" id="results" style="display: none;">
-            <div class="loading" id="loading">در حال جستجو...</div>
+            <div class="loading" id="loading">Searching...</div>
+        </div>
+        
+        <div class="footer">
+            Powered by BehimeloBot | xAI
         </div>
     </div>
 
     <script>
-        // Initialize Telegram WebApp
         let tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-
-        // Set theme
-        document.body.style.backgroundColor = tg.themeParams.bg_color || '#667eea';
+        
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#4b0082';
 
         function searchMusic() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
-                alert('لطفاً نام آهنگ یا خواننده را وارد کنید');
+                tg.showAlert('Please enter a song or artist name');
                 return;
             }
 
@@ -502,7 +558,7 @@ def index():
             
             resultsDiv.style.display = 'block';
             loadingDiv.style.display = 'block';
-            resultsDiv.innerHTML = '<div class="loading">در حال جستجو...</div>';
+            resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
 
             fetch('/api/search', {
                 method: 'POST',
@@ -517,7 +573,8 @@ def index():
             })
             .catch(error => {
                 console.error('Error:', error);
-                resultsDiv.innerHTML = '<div class="result-item">❌ خطا در جستجو</div>';
+                resultsDiv.innerHTML = '<div class="result-item">❌ Search Error</div>';
+                tg.showAlert('Error occurred during search');
             });
         }
 
@@ -525,7 +582,7 @@ def index():
             const resultsDiv = document.getElementById('results');
             
             if (!data.result || !data.result.search_result) {
-                resultsDiv.innerHTML = '<div class="result-item">❌ نتیجه‌ای یافت نشد</div>';
+                resultsDiv.innerHTML = '<div class="result-item">❌ No results found</div>';
                 return;
             }
 
@@ -533,51 +590,50 @@ def index():
             const musics = searchResult.musics || {};
             const videos = searchResult.videos || {};
             
-            let html = `<h3>🎵 نتایج جستجو برای "${query}":</h3>`;
+            let html = `<h3>🎵 Search results for "${query}":</h3>`;
             
-            // Display musics
             let count = 0;
             for (let id in musics) {
                 if (count >= 10) break;
                 const music = musics[id];
-                const artist = music.artist_name?.fa || music.artist_name?.en || 'نامشخص';
+                const artist = music.artist_name?.fa || music.artist_name?.en || 'Unknown';
                 const song = music.song_name?.fa || music.song_name?.en || '';
+                const audioUrl = music.audio_url || music.share_link || '';
                 
                 html += `
                     <div class="result-item">
                         <div style="font-weight: bold;">🎵 ${music.title}</div>
                         <div>👤 ${artist}</div>
                         ${song ? `<div>🎼 ${song}</div>` : ''}
-                        ${music.share_link ? `<div><a href="${music.share_link}" target="_blank" style="color: #4CAF50;">🔗 لینک</a></div>` : ''}
+                        ${audioUrl ? `<audio class="audio-player" controls src="${audioUrl}"></audio>` : ''}
+                        ${music.share_link ? `<a class="download-btn" href="${music.share_link}" target="_blank">⬇ Download</a>` : ''}
                     </div>
                 `;
                 count++;
             }
             
-            // Display videos
             for (let id in videos) {
                 if (count >= 10) break;
                 const video = videos[id];
-                const artist = video.artist_name?.fa || video.artist_name?.en || 'نامشخص';
+                const artist = video.artist_name?.fa || video.artist_name?.en || 'Unknown';
                 
                 html += `
                     <div class="result-item">
                         <div style="font-weight: bold;">🎬 ${video.title}</div>
                         <div>👤 ${artist}</div>
-                        ${video.share_link ? `<div><a href="${video.share_link}" target="_blank" style="color: #4CAF50;">🔗 لینک</a></div>` : ''}
+                        ${video.share_link ? `<a class="download-btn" href="${video.share_link}" target="_blank">⬇ Download</a>` : ''}
                     </div>
                 `;
                 count++;
             }
             
             if (count === 0) {
-                html = '<div class="result-item">❌ نتیجه‌ای یافت نشد</div>';
+                html = '<div class="result-item">❌ No results found</div>';
             }
             
             resultsDiv.innerHTML = html;
         }
 
-        // Handle enter key
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchMusic();
@@ -591,16 +647,14 @@ def index():
 
 def main():
     """تابع اصلی"""
-    logger.info("🚀 Starting Behimelobot...")
+    logger.info("🚀 Starting BehimeloBot...")
     
-    # 🔧 تست API در startup
     test_api_on_startup()
     
     if not TELEGRAM_TOKEN:
         logger.error("❌ TELEGRAM_TOKEN not found")
         return
     
-    # تنظیم webhook
     try:
         webhook_url = f"{WEBHOOK_URL}/webhook"
         set_webhook_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
@@ -613,7 +667,6 @@ def main():
     except Exception as e:
         logger.error(f"❌ Error setting webhook: {e}")
     
-    # اجرای Flask
     logger.info(f"🌐 Starting Flask on port {PORT}")
     app.run(host='0.0.0.0', port=PORT, debug=False)
 
