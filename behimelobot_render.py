@@ -40,6 +40,7 @@ def safe_api_call(action: str, params: dict = None):
         post_data = {'accessKey': ACCESS_KEY, 'action': action}
         if params: post_data.update(params)
         response = requests.post(API_BASE, data=post_data, timeout=15)
+        logging.info(f"API response: {response.text}")
         if response.status_code == 200:
             try:
                 return True, response.json()
@@ -55,6 +56,7 @@ def normalize_query(query: str) -> str:
     return re.sub(r'\s+', ' ', query.strip())
 
 def format_music_results(data, query):
+    logging.info(f"format_music_results input: {data}")
     if not isinstance(data, dict) or not data.get('ok'):
         return f"❌ هیچ نتیجه‌ای برای '{query}' پیدا نشد."
     result = data.get('result', {})
@@ -101,7 +103,6 @@ def send_telegram_message(chat_id, text, reply_markup=None):
     return True
 
 def send_main_keyboard(chat_id):
-    # ReplyKeyboardMarkup for Telegram with creative music options
     keyboard = {
         "keyboard": [
             [{"text": "🔍 جستجو موزیک"}, {"text": "🎵 آهنگ جدید"}],
@@ -127,7 +128,7 @@ def handle_search_command(message_text, chat_id):
         return
     formatted = format_music_results(data, query)
     send_telegram_message(chat_id, formatted)
-    # پخش آهنگ با sendAudio اگر audio_url موجود بود
+    # ارسال آهنگ با sendAudio اگر audio_url موجود بود
     search_result = data.get('result', {}).get('search_result', {})
     musics = search_result.get('musics', {})
     for music_id, music_data in musics.items():
@@ -221,7 +222,19 @@ def api_search():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat(), 'port': PORT})
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'port': PORT,
+        'api_base': API_BASE,
+        'access_key': ACCESS_KEY,
+        'telegram_token': TELEGRAM_TOKEN,
+        'webhook_url': WEBHOOK_URL
+    })
+
+@app.route('/webapp')
+def webapp():
+    return index()
 
 @app.route('/')
 def index():
