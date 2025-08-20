@@ -3,7 +3,7 @@ import json
 import logging
 import requests
 from typing import Dict, Any, Tuple
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, send_from_directory
 from datetime import datetime
 import re
 
@@ -684,6 +684,16 @@ def index():
     """
     return render_template_string(html_template)
 
+@app.route('/webapp')
+def webapp():
+    """پشتیبانی از مسیر /webapp برای Mini App"""
+    return index()
+
+@app.route('/favicon.ico')
+def favicon():
+    """ارائه favicon.ico"""
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 def main():
     """تابع اصلی"""
     logger.info("🚀 Starting BehimeloBot...")
@@ -697,12 +707,16 @@ def main():
     try:
         webhook_url = f"{WEBHOOK_URL}/webhook"
         set_webhook_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
+        logger.info(f"🔗 Attempting to set webhook: {webhook_url}")
         
         response = requests.post(set_webhook_url, data={'url': webhook_url}, timeout=10)
+        logger.info(f"🔗 Webhook response status: {response.status_code}")
+        logger.info(f"🔗 Webhook response text: {response.text}")
+        
         if response.status_code == 200:
             logger.info(f"✅ Webhook set successfully: {webhook_url}")
         else:
-            logger.error(f"❌ Failed to set webhook: {response.status_code}")
+            logger.error(f"❌ Failed to set webhook: {response.status_code} - {response.text}")
     except Exception as e:
         logger.error(f"❌ Error setting webhook: {e}")
     
