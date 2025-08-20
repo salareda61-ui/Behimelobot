@@ -24,7 +24,15 @@ API_BASE = None
 WEBHOOK_URL = None
 PORT = None
 
-def load_env_from_secrets():
+def load_env_from_secrets()
+
+# چک کردن PORT در شروع
+if PORT != int(os.getenv('PORT', 4000)):
+    logger.warning(f"⚠️ PORT mismatch detected!")
+    logger.warning(f"   Environment PORT: {os.getenv('PORT')}")
+    logger.warning(f"   Configured PORT: {PORT}")
+    PORT = int(os.getenv('PORT', 4000))
+    logger.info(f"✅ PORT corrected to: {PORT}"):
     """بارگذاری متغیرهای محیطی از Secret Files"""
     global TELEGRAM_TOKEN, ACCESS_KEY, API_BASE, WEBHOOK_URL, PORT
     
@@ -413,10 +421,33 @@ def health():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
+        'port': PORT,
         'api_base': API_BASE,
         'access_key_set': bool(ACCESS_KEY),
         'telegram_token_set': bool(TELEGRAM_TOKEN),
         'webhook_url_set': bool(WEBHOOK_URL)
+    })
+
+@app.route('/debug')
+def debug_info():
+    """اطلاعات debug برای troubleshooting"""
+    return jsonify({
+        'status': 'debug_info',
+        'timestamp': datetime.now().isoformat(),
+        'environment_variables': {
+            'PORT': os.getenv('PORT', 'Not set'),
+            'API_BASE': os.getenv('API_BASE', 'Not set'),
+            'WEBHOOK_URL': os.getenv('WEBHOOK_URL', 'Not set')[:50] + '...' if os.getenv('WEBHOOK_URL') else 'Not set',
+            'TELEGRAM_TOKEN': 'Set' if os.getenv('TELEGRAM_TOKEN') else 'Not set',
+            'ACCESS_KEY': 'Set' if os.getenv('ACCESS_KEY') else 'Not set'
+        },
+        'current_config': {
+            'PORT': PORT,
+            'API_BASE': API_BASE,
+            'WEBHOOK_URL': WEBHOOK_URL[:50] + '...' if WEBHOOK_URL else None,
+            'TELEGRAM_TOKEN_SET': bool(TELEGRAM_TOKEN),
+            'ACCESS_KEY_SET': bool(ACCESS_KEY)
+        }
     })
 
 @app.route('/')
@@ -807,6 +838,12 @@ def set_webhook():
 def main():
     """تابع اصلی"""
     logger.info("🚀 Starting BehimeloBot...")
+    logger.info(f"🔧 Configuration:")
+    logger.info(f"   - PORT: {PORT}")
+    logger.info(f"   - API_BASE: {API_BASE}")
+    logger.info(f"   - WEBHOOK_URL: {WEBHOOK_URL[:50]}..." if WEBHOOK_URL else "   - WEBHOOK_URL: Not set")
+    logger.info(f"   - TELEGRAM_TOKEN: {'Set' if TELEGRAM_TOKEN else 'Not set'}")
+    logger.info(f"   - ACCESS_KEY: {'Set' if ACCESS_KEY else 'Not set'}")
     
     # تست API در startup
     test_api_on_startup()
@@ -817,8 +854,15 @@ def main():
     else:
         logger.warning("⚠️ Webhook not set - missing WEBHOOK_URL or TELEGRAM_TOKEN")
     
-    logger.info(f"🌐 Starting Flask on port {PORT}")
-    app.run(host='0.0.0.0', port=PORT, debug=False)
+    logger.info(f"🌐 Starting Flask server on 0.0.0.0:{PORT}")
+    
+    # اطمینان از اینکه Flask روی port صحیح اجرا می‌شود
+    try:
+        app.run(host='0.0.0.0', port=PORT, debug=False)
+    except Exception as e:
+        logger.error(f"❌ Failed to start Flask server: {e}")
+        logger.error(f"❌ Make sure port {PORT} is available")
+        raise
 
 if __name__ == '__main__':
     main()
