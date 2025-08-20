@@ -46,7 +46,7 @@ def load_env_from_secrets():
     ACCESS_KEY = os.getenv('ACCESS_KEY')
     API_BASE = os.getenv('API_BASE', 'https://api.ineo-team.ir/rj.php')
     WEBHOOK_URL = os.getenv('WEBHOOK_URL')
-    PORT = int(os.getenv('PORT', 10000))
+    PORT = int(os.getenv('PORT', 4000))
     
     required_vars = {
         'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
