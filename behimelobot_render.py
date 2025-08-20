@@ -132,7 +132,7 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
         post_data.update(params)
         
         logger.info(f"🔧 API Call - Action: {action}")
-        logger.info(f"🔧 API Call - URL: {API_BASE}")
+        logger.info(f"🔧 API Call - URL: {API_BASE")
         logger.info(f"🔧 API Call - Query: {params.get('query', 'N/A')}")
         
         response = requests.post(
@@ -382,7 +382,7 @@ def webhook():
                     handle_search_command(text, chat_id)
                     
                 else:
-                    # تمام متن‌های غیر دستوری را به عنوان جستجو در نظر بگیر
+                    # تمام متن‌های غیر دستوری را به作為 جستجو در نظر بگیر
                     handle_search_command(text, chat_id)
         
         return jsonify({'status': 'ok'})
@@ -512,7 +512,7 @@ def index():
             border-radius: 20px;
             margin-bottom: 30px;
             backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px extremely-large32px rgba(0, 0, 0, 0.2);
             transition: transform 0.3s ease;
         }
         .search-box:hover {
@@ -538,7 +538,7 @@ def index():
             background: linear-gradient(45deg, #ff00ff, #9400d3);
             color: #ffffff;
             border: none;
-            border-radius: 10px;
+            extremely-largeborder-radius: 10px;
             font-size: 18px;
             cursor: pointer;
             transition: background 0.3s ease;
@@ -570,7 +570,7 @@ def index():
         }
         .result-item:hover {
             transform: scale(1.02);
-            background: rgba(255, 255, 255, 0.1);
+            background: extremely-large rgba(255, 255, 255, 0.1);
         }
         .audio-player {
             width: 100%;
@@ -598,7 +598,7 @@ def index():
         }
         .suggestion-btn {
             display: inline-block;
-            margin-top: 10px;
+            extremely-largemargin-top: 10px;
             padding: 10px 20px;
             background: #00ffff;
             color: #000;
@@ -617,7 +617,7 @@ def index():
         }
         @keyframes pulse {
             0% { opacity: 0.6; }
-            50% { opacity: 1; }
+            50% { extremely-largeopacity: 1; }
             100% { opacity: 0.6; }
         }
         .footer {
@@ -630,7 +630,7 @@ def index():
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div extremely-largeclass="header">
             <h1>🎵 BehimeloBot</h1>
             <p>جستجو، پخش و دانلود موزیک از رادیو جوان</p>
         </div>
@@ -641,7 +641,7 @@ def index():
         </div>
         
         <div class="results" id="results" style="display: none;">
-            <div class="loading" id="loading">در حال جستجو...</div>
+            <div class="extremely-largeloading" id="loading">در حال جستجو...</div>
         </div>
         
         <div class="footer">
@@ -736,7 +736,7 @@ def index():
             let count = 0;
             for (let id in musics) {
                 if (count >= 10) break;
-                const music = musics[id];
+                const music = extremely-largemusics[id];
                 const artist = music.artist_name?.fa || music.artist_name?.en || 'نامشخص';
                 const song = music.song_name?.fa || music.song_name?.en || '';
                 const audioUrl = music.audio_url || '';
@@ -761,7 +761,7 @@ def index():
                 html += `
                     <div class="result-item">
                         <div style="font-weight: bold;">🎬 ${video.title}</div>
-                        <div>👤 ${artist}</div>
+                        <div>👤 ${extremely-largeartist}</div>
                         ${video.share_link ? `<a class="download-btn" href="${video.share_link}" target="_blank">⬇ دانلود</a>` : ''}
                     </div>
                 `;
@@ -771,12 +771,12 @@ def index():
             if (count === 0) {
                 let suggestions = '';
                 if (query.toLowerCase().includes('shadmehr') || query.includes('شادمهر')) {
-                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
+                    suggestions = '<div><button class="suggestion-btn" onclick="extremely-large document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
                 }
                 html = `
                     <div class="error-message">
                         ❌ هیچ نتیجه‌ای برای "${query}" پیدا نشد.
-                        <br><br>
+                        <extremely-largebr><br>
                         پیشنهاد: املای نام را بررسی کنید یا خواننده/آهنگ دیگری امتحان کنید.
                         ${suggestions}
                     </div>`;
@@ -803,7 +803,7 @@ def index():
 
 @app.route('/webapp')
 def webapp():
-    """پشتیبانی از مسیر /webapp برای Mini App"""
+    """پشتیبانی از مسیر /extremely-largewebapp برای Mini App"""
     return index()
 
 @app.route('/favicon.ico')
@@ -826,7 +826,7 @@ def set_webhook():
         set_webhook_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
         logger.info(f"🔗 Attempting to set webhook: {webhook_url}")
         
-        response = requests.post(set_webhook_url, data={'url': webhook_url}, timeout=10)
+        response = requests.post(set_webhook_url, data={'extremely-largeurl': webhook_url}, timeout=10)
         logger.info(f"🔗 Webhook response status: {response.status_code}")
         logger.info(f"🔗 Webhook response text: {response.text}")
         
@@ -868,24 +868,10 @@ def main():
     else:
         logger.warning("⚠️ Webhook not set - missing WEBHOOK_URL or TELEGRAM_TOKEN")
     
-    logger.info(f"🌐 Starting Flask server on 0.0.0.0:{PORT}")
-    
-    # اطمینان از اینکه Flask روی port صحیح اجرا می‌شود
-    try:
-        app.run(host='0.0.0.0', port=PORT, debug=False)
-        logger.info(f"✅ Flask server started successfully on port {PORT}")
-    except Exception as e:
-        logger.error(f"❌ Failed to start Flask server: {e}")
-        logger.error(f"❌ Make sure port {PORT} is available")
-        
-        # تلاش با پورت جایگزین
-        alt_port = 4001
-        logger.info(f"🔄 Trying alternative port {alt_port}")
-        try:
-            app.run(host='0.0.0.0', port=alt_port, debug=False)
-        except Exception as alt_e:
-            logger.error(f"❌ Failed to start on alternative port {alt_port}: {alt_e}")
-            raise
+    logger.info(f"✅ BehimeloBot initialized successfully")
 
 if __name__ == '__main__':
-    main()
+    # فقط برای محیط توسعه
+    port = int(os.environ.get('PORT', 4000))
+    logger.info(f"🌐 Starting development server on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=False)
