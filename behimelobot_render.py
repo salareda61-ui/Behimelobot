@@ -6,10 +6,8 @@ from flask import Flask, request, jsonify, render_template_string, send_from_dir
 from datetime import datetime
 import re
 
-# تعریف اپلیکیشن Flask
 app = Flask(__name__)
 
-# متغیرهای محیطی
 TELEGRAM_TOKEN = None
 ACCESS_KEY = None
 API_BASE = None
@@ -35,7 +33,6 @@ def load_env_from_secrets():
     PORT = int(os.getenv('PORT', 4000))
 load_env_from_secrets()
 
-# توابع API
 def safe_api_call(action: str, params: dict = None):
     try:
         if not ACCESS_KEY:
@@ -104,6 +101,7 @@ def send_telegram_message(chat_id, text, reply_markup=None):
     return True
 
 def send_main_keyboard(chat_id):
+    # ReplyKeyboardMarkup for Telegram with creative music options
     keyboard = {
         "keyboard": [
             [{"text": "🔍 جستجو موزیک"}, {"text": "🎵 آهنگ جدید"}],
@@ -139,7 +137,6 @@ def handle_search_command(message_text, chat_id):
             url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendAudio"
             payload = {"chat_id": chat_id, "audio": audio_url, "caption": title}
             requests.post(url, data=payload)
-    # دانلود لینک‌ها به صورت پیام جداگانه هم قابل ارسال است
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -229,40 +226,339 @@ def health():
 @app.route('/')
 def index():
     html_template = """
-    <html>
-    <head>
-        <title>BehimeloBot - جستجوی موزیک</title>
-    </head>
-    <body>
-        <h1>🎵 BehimeloBot</h1>
-        <p>جستجو و دانلود موزیک در رادیو جوان</p>
-        <input type="text" id="searchInput" placeholder="نام آهنگ یا خواننده..."/>
-        <button onclick="searchMusic()">جستجو</button>
-        <div id="results"></div>
-        <script>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BehimeloBot - جستجوی موزیک</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #4b0082, #1c2526);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 1s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        .header h1 {
+            font-size: 2.8em;
+            background: linear-gradient(to right, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        .search-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .search-box:hover {
+            transform: translateY(-5px);
+        }
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        .search-input::placeholder {
+            color: #cccccc;
+        }
+        .search-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff00ff, #9400d3);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .search-btn:hover {
+            background: linear-gradient(45deg, #9400d3, #ff00ff);
+        }
+        .search-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .results {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            max-height: 500px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #ff00ff #333;
+        }
+        .result-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            transition: transform 0.2s ease;
+            text-align: right;
+        }
+        .result-item:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .audio-player {
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 10px;
+        }
+        .download-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #00ff00;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+        .download-btn:hover {
+            background: #00cc00;
+        }
+        .error-message {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        .suggestion-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #00ffff;
+            color: #000;
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+        }
+        .suggestion-btn:hover {
+            background: #00cccc;
+        }
+        .loading {
+            text-align: center;
+            font-size: 18px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 BehimeloBot</h1>
+            <p>جستجو، پخش و دانلود موزیک از رادیو جوان</p>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="نام آهنگ یا خواننده را وارد کنید..." id="searchInput">
+            <button class="search-btn" onclick="searchMusic()" id="searchBtn">🔍 جستجو</button>
+        </div>
+        
+        <div class="results" id="results" style="display: none;">
+            <div class="loading" id="loading">در حال جستجو...</div>
+        </div>
+        
+        <div class="footer">
+            Powered by BehimeloBot | Anthropic AI
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+        let isSearching = false;
+        
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            document.body.style.backgroundColor = tg.themeParams.bg_color || '#4b0082';
+        } else {
+            console.log('Telegram WebApp not loaded, running in browser mode');
+        }
+
         function searchMusic() {
-            let q = document.getElementById('searchInput').value;
-            fetch('/api/search', {method: 'POST', headers: {'Content-Type':'application/json'}, body:JSON.stringify({query:q})})
-            .then(r=>r.json()).then(data=>{
-                let res = document.getElementById('results');
-                if (!data.ok || !data.result || !data.result.search_result) {
-                    res.innerHTML = "❌ نتیجه‌ای پیدا نشد.";
-                    return;
+            if (isSearching) return;
+            
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                if (tg) {
+                    tg.showAlert('لطفاً نام آهنگ یا خواننده را وارد کنید');
+                } else {
+                    alert('لطفاً نام آهنگ یا خواننده را وارد کنید');
                 }
-                let musics = data.result.search_result.musics || {};
-                let html = '';
-                Object.values(musics).forEach(m=>{
-                    html += `<div><b>${m.title}</b> <br>👤 ${m.artist_name.fa||m.artist_name.en||''}<br>
-                    ${m.song_name.fa||m.song_name.en||''}<br>
-                    ${m.audio_url ? `<audio controls src="${m.audio_url}"></audio>` : ''}
-                    ${m.share_link ? `<a href="${m.share_link}" target="_blank">⬇️ دانلود</a>` : ''}</div><hr>`;
-                });
-                res.innerHTML = html ? html : "❌ نتیجه‌ای پیدا نشد.";
+                return;
+            }
+
+            isSearching = true;
+            const resultsDiv = document.getElementById('results');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            searchBtn.textContent = 'در حال جستجو...';
+            searchBtn.disabled = true;
+            
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">در حال جستجو...</div>';
+
+            fetch('/api/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({query: query})
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data, query);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = '<div class="error-message">❌ خطا در جستجو. لطفاً دوباره تلاش کنید.</div>';
+                if (tg) {
+                    tg.showAlert('خطا در جستجو رخ داد');
+                }
+            })
+            .finally(() => {
+                isSearching = false;
+                searchBtn.textContent = '🔍 جستجو';
+                searchBtn.disabled = false;
             });
         }
-        </script>
-    </body>
-    </html>
+
+        function displayResults(data, query) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (!data.ok || !data.result || !data.result.search_result) {
+                let suggestions = '';
+                if (query.toLowerCase().includes('shadmehr') || query.includes('شادمهر')) {
+                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
+                }
+                resultsDiv.innerHTML = `
+                    <div class="error-message">
+                        ❌ هیچ نتیجه‌ای برای "${query}" پیدا نشد.
+                        <br><br>
+                        پیشنهاد: املای نام را بررسی کنید یا خواننده/آهنگ دیگری امتحان کنید.
+                        ${suggestions}
+                    </div>`;
+                return;
+            }
+
+            const searchResult = data.result.search_result;
+            const musics = searchResult.musics || {};
+            const videos = searchResult.videos || {};
+            
+            let html = `<h3>🎵 نتایج جستجو برای "${query}":</h3>`;
+            
+            let count = 0;
+            for (let id in musics) {
+                if (count >= 10) break;
+                const music = musics[id];
+                const artist = music.artist_name?.fa || music.artist_name?.en || 'نامشخص';
+                const song = music.song_name?.fa || music.song_name?.en || '';
+                const audioUrl = music.audio_url || '';
+                
+                html += `
+                    <div class="result-item">
+                        <div style="font-weight: bold;">🎵 ${music.title}</div>
+                        <div>👤 ${artist}</div>
+                        ${song ? `<div>🎼 ${song}</div>` : ''}
+                        ${audioUrl ? `<audio class="audio-player" controls src="${audioUrl}"></audio>` : ''}
+                        ${music.share_link ? `<a class="download-btn" href="${music.share_link}" target="_blank">⬇ دانلود</a>` : ''}
+                    </div>
+                `;
+                count++;
+            }
+            
+            for (let id in videos) {
+                if (count >= 10) break;
+                const video = videos[id];
+                const artist = video.artist_name?.fa || video.artist_name?.en || 'نامشخص';
+                
+                html += `
+                    <div class="result-item">
+                        <div style="font-weight: bold;">🎬 ${video.title}</div>
+                        <div>👤 ${artist}</div>
+                        ${video.share_link ? `<a class="download-btn" href="${video.share_link}" target="_blank">⬇ دانلود</a>` : ''}
+                    </div>
+                `;
+                count++;
+            }
+            
+            if (count === 0) {
+                let suggestions = '';
+                if (query.toLowerCase().includes('shadmehr') || query.includes('شادمهر')) {
+                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">منظورتان Shadmehr Aghili است؟</button></div>';
+                }
+                html = `
+                    <div class="error-message">
+                        ❌ هیچ نتیجه‌ای برای "${query}" پیدا نشد.
+                        <br><br>
+                        پیشنهاد: املای نام را بررسی کنید یا خواننده/آهنگ دیگری امتحان کنید.
+                        ${suggestions}
+                    </div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !isSearching) {
+                searchMusic();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('searchInput').focus();
+        });
+    </script>
+</body>
+</html>
     """
     return render_template_string(html_template)
 
