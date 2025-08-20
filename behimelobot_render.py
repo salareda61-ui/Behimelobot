@@ -1,4 +1,3 @@
-```python
 import os
 import json
 import logging
@@ -159,7 +158,7 @@ def safe_api_call(action: str, params: Dict[str, Any] = None) -> Tuple[bool, Any
 def format_music_results(data: Dict, query: str) -> str:
     """فرمت کردن نتایج موسیقی"""
     logger.info(f"🔧 format_music_results called with query: {query}")
-    logger.info(f"🔧 Data type: {stype(data)}")
+    logger.info(f"🔧 Data type: {type(data)}")
     
     if not isinstance(data, dict):
         logger.error(f"❌ Data is not dict: {type(data)}")
@@ -660,7 +659,7 @@ def index():
             if (count === 0) {
                 let suggestions = '';
                 if (query.toLowerCase().includes('shadmehr')) {
-                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Agh bleak; searchMusic();">Did you mean Shadmehr Aghili?</button></div>';
+                    suggestions = '<div><button class="suggestion-btn" onclick="document.getElementById(\'searchInput\').value=\'Shadmehr Aghili\'; searchMusic();">Did you mean Shadmehr Aghili?</button></div>';
                 }
                 html = `
                     <div class="error-message">
@@ -711,5 +710,4 @@ def main():
     app.run(host='0.0.0.0', port=PORT, debug=False)
 
 if __name__ == '__main__':
-    main()
-```
+    main()پ
